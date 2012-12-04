@@ -437,7 +437,7 @@ def convertGroup(group,infi_list,group_no):
             writeFile(wafer_ID,infi_list,vbs_list[i],idlin_final_g,idlin_final_l,idsat_final_g,idsat_final_l,
                       vtsat_final_g,vtsat_final_l,vtlin_final_g,vtlin_final_l,badlist,goodlist)
             
-            if True:#mean == 'OFF':
+            if False:#mean == 'OFF':
                 idlin_final_l= idlin_final_l *abs(idlin_mean)* 1e-6
                 idsat_final_l= idsat_final_l *abs(idsat_mean)* 1e-3
                 writekickMean(wafer_ID,infi_list,vbs_list[i],idlin_final_l, idsat_final_l)
@@ -685,8 +685,8 @@ def writeFile(wafer_ID,infi_list,vbs,idlin_final_g,idlin_final_l,idsat_final_g,i
     w=repr(infi_list[-1])
     name_list.append(repr(vbs))
     name_str='_'.join(name_list)
-    name_str_g=name_str+'_global'+'.spec'
-    name_str_l=name_str+'_local'+'.spec'
+    name_str_g=name_str+'_global'+'.gspec'
+    name_str_l=name_str+'_local'+'.lspec'
     name_str_raw=name_str+'_raw'+'.gwat'
     name_str_delta=name_str+'_delta'+'.lwat'
     
@@ -993,7 +993,9 @@ def findspecfile():
     dircontent=os.walk(currentdir)
     for root,dirs,files in dircontent:
         for mem in files:
-            if mem.split('.')[-1]=='spec':
+            if mem.split('.')[-1].find('spec')<>-1:
+                if mem.find('global')<>-1:
+                    continue
                 mem=os.path.join(root,mem)
                 speclist.append(mem) 
                 
@@ -1040,7 +1042,7 @@ def plot(filename,show_flag=0):
         plt.show()
         plt.close()
     else:
-        png_path=filename.strip('.spec')+'.png'
+        png_path='.'.join(filename.split('.')[:-1]) + '.png'
         plt.savefig(png_path)
         plt.close()
         printWait('plot %s...\n'%filename)
@@ -1050,21 +1052,21 @@ if __name__ == '__main__':
     printWait('''*****************************************************************************
 1.If you will delete the data out of n sigma just input sigma=n
 2.If you want to check a specific .spec file's figure, input the file's name
-  like '8_NMOS_HVT_-0.6_local.spec', '8_NMOS_HVT_-0.6_local.spec -id' for 
-  idlin and idsat figure only and '8_NMOS_HVT_-0.6_local.spec -vt' for
+  like '8_NMOS_HVT_-0.6_local.lspec', '8_NMOS_HVT_-0.6_local.lspec -id' for 
+  idlin and idsat figure only and '8_NMOS_HVT_-0.6_local.lspec -vt' for
   vtsat and vtline figure only.
 3.Input 'q' to exit
 *****************************************************************************\n''')
     c_input=raw_input()
     while(c_input<>'q' and c_input<>'Q'):
         getSigma(c_input)
-        if c_input.find('.spec')<>-1:
+        if c_input.find('spec')<>-1:
             findspecfile()
             flag=0
             show_flag=1
             temp_list=c_input.split(' ')
             for i in range(0,len(temp_list)):
-                if temp_list[i].find('.spec')<>-1:
+                if temp_list[i].find('spec')<>-1:
                     spec_name=temp_list[i].rstrip('\"\'')
                     spec_name=spec_name.lstrip('\"\'')
                 elif temp_list[i].upper()=='-ID':
@@ -1097,8 +1099,8 @@ if __name__ == '__main__':
         printWait('''*****************************************************************************
 1.If you will delete the data out of n sigma just input sigma=n
 2.If you want to check a specific .spec file's figure, input the file's name
-  like '8_NMOS_HVT_-0.6_local.spec', '8_NMOS_HVT_-0.6_local.spec -id' for 
-  idlin and idsat figure only and '8_NMOS_HVT_-0.6_local.spec -vt' for
+  like '8_NMOS_HVT_-0.6_local.lspec', '8_NMOS_HVT_-0.6_local.lspec -id' for 
+  idlin and idsat figure only and '8_NMOS_HVT_-0.6_local.lspec -vt' for
   vtsat and vtline figure only.
 3.Input 'q' to exit
 *****************************************************************************\n''')
