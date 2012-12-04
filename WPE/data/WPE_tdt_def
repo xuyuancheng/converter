@@ -1,0 +1,76 @@
+#
+# GLOBAL section -- global variables
+#
+.START_GLOBAL
+#Name	#Value
+DEVICE_TYPE	NMOS
+T	25
+# NOTE: INSTANACE_COL must be consistent with the number of W/L columns DATA section
+INSTANCE_COL	9
+# Define two-major order graphs and their X-Axis
+MAJOR_1	W	L
+X_AXIS_1	SC_X1
+MAJOR_2	L	W
+X_AXIS_2	SC_X2
+MAJOR_3	W	L
+X_AXIS_3	SC_Y1
+MAJOR_4	L	W
+X_AXIS_4	SC_Y2
+Vdd	3.3	
+Vdthx	0.05
+Fovdr	1
+.END_GLOBAL
+#
+#  OUTPUT Section: define a target to BSIMProPlus keyout mapping relation; set input condition for the key output
+"#    NOTE: in a bias condition ""name=value"", no space is allowed in between;"
+"#        in ERROR expression, only ""Model"" or ""Target"" variable is allow in current release"
+# DATA section -- target data table with geometry
+# NOTE: the number of W/L columns must be consistent with INSTANCE_COL in GLOBAL section
+# a output must be defined in OUTPUT section
+.START_OUTPUT
+#Output_Name	#Key_Output_Name	# ERROR expression	# the criteria of on-target	#Bias ?
+VTHI	Vth_CC	Error=(Model-Target)*1000	Error<2	Vds=Vdthx	Vbs=0	CC=1.0e-7	L_Offset=0	W_Offset=0	Current=Id
+IDLIN	Vth_CC	Error=(Model-Target)*1000	Error<2	Vds=Vdd	Vbs=0	CC=1.0e-7	L_Offset=0	W_Offset=0	Current=Id
+IDSAT	Vth_maxgm	Error=(Model-Target)*1000	Error<2	Vds=Vdthx	Vbs=0	Current=Id	GmFrom=dI/dVg
+#Isat1	Idsat*1000/W	Error=(Model/Target-1)*100	Error<1	Vgs=Vdd	Vds=Vdd	Vbs=0
+#Ioff1	Idsat*(1)	Error=(Model/Target-1)*100	Error<50	Vgs=0	Vds=Vdd	Vbs=0
+#Idlin1	Idlin*1000/W	Error=(Model/Target-1)*100	Error<3	Vgs=Vdd	Vds=Vdthx	Vbs=0
+#Idgo1	Ida*1000/W	Error=(Model/Target-1)*100	Error<5	Vthmethod=MaxGM	Vds=0.5*Vdd	Vbs=0	Vg_ida_ovdr=Vg_ovdr	VdsVthMGM=Vdthx
+#Idgo2	Ida*1000/W	Error=(Model/Target-1)*100	Error<5	Vthmethod=MaxGM	Vds=Vdd	Vbs=0	Vg_ida_ovdr=Vg_ovdr	VdsVthMGM=Vdthx
+#GamL1	Gamma	Error=(Model/Target-1)*100	Error<5	Vthmethod=CC	CC=-1.0e-7	Vds=Vdthx	Vbs=0	Vbs2=-1.0*Vdd/2.0	PHI=0.65	L_Offset=0	W_Offset=0	CCCurent=Id
+#Gmm1	Gm@Vth	Error=(Model/Target-1)*100	Error<5	Vthmethod=MaxGM	Vds=0.5*Vdd	Vbs=0	gmVgovdr=0.175	gmVgstep=Vdthx
+#Gds1	Gds@Vth	Error=(Model/Target-1)*100	Error<2	Vthmethod=MaxGM	Vds=0.5*Vdd	Vbs=0	gdsVgovdr=Vg_ovdr	gdsVdstep=-0.1
+.END_OUTPUT
+#
+# DATA section -- target data table with geometry?
+# NOTE: the number of W/L columns must be consistent with INSTANCE_COL in GLOBAL section
+#           a output must be defined in OUTPUT section
+.START_DATA
+
+
+.END_DATA
+#
+# Default model parameters to tune with boundaries
+#
+.START_PARAM
+# Paramete Name	# Lower Boundary	# Upper Boundary
+vth0	-1	1
+k2	-1	1
+k3	-100	100
+k3b	-100	100
+cit	0	1.00E-02
+voff	-0.3	0
+eta0	1.00E-04	1
+etab	-0.5	0.5
+u0	0.006	0.08
+ua	-3.00E-09	3.00E-09
+ub	-3.00E-18	3.00E-18
+uc	-2.00E-10	2.00E-10
+a0	0	15
+ags	0	15
+keta	-0.1	0.1
+pclm	0.01	2
+pdiblc2	0	0.1
+pdiblcb	-1	1
+pscbe2	1.00E-20	1.00E-05
+.END_PARAM

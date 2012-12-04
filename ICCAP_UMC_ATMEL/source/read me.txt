@@ -1,0 +1,12 @@
+Just put *.mdm file to current diretory.
+
+    1 Read device type from file name: if filename starts with 'p' or 'P', device type is 'PMOS' else device type will be set to 'NMOS'.
+
+    2 When convert dc data, Instance imformation like value of W,L,T is needed , set to default value: w=1.2 l=0.45 t=25. 
+
+    3 When convert rf data, some information in datahead can't find in *.mdm file, all set to a initial value.
+
+    4 About DC data convert, if *.mdm filenames have pairs of Id_Vd,Id_Vg and other part in filename is the same,then converter will combine two DC files together.
+        Exp. Converter will combine file 'PHV_w0p5u_l1p5u_IdVd_s1.mdm' and 'PHV_w0p5u_l1p5u_IdVg1_s1.mdm' together to one file 'PHV_w0p5u_l1p5u__dc.data'
+	
+    5 Support multiple outputs and multiple data parts in one mdm file. Every 'BEGIN_HEADER-END_HEADER' pair will be converted to one independent *.data file or *.sp2 file.
