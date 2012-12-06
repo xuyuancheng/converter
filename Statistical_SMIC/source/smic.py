@@ -11,6 +11,7 @@ import string
 import sys
 import shutil
 from shellcolor import *
+from PyQt4.QtCore import *
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -58,7 +59,7 @@ def findFile():
             printWait(hitfile)
             print
             
-def convertFile():
+def convertFile(gui_output_path, gui_ratio, gui_rename,gui):
     global log_f
     global bad_f
     global convertlist
@@ -71,7 +72,7 @@ def convertFile():
     flag_str=[]
     con=[]
     for i in range(0,len(convertlist)):
-        printWait('Convert %s...'%convertlist[i])
+        gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['Convert %s...'%convertlist[i],'info'])
         f=open(convertlist[i], 'r')
         content=f.readlines()
         f.close()
@@ -123,33 +124,33 @@ def convertFile():
                         temp_group=temp_group+con[j][row_index[j][k]:row_index[j][k+1]]
         group_list.append(temp_group)
     
-    makedir()
+    makedir(gui_output_path)
     log='_'.join(wafer_ID)+'_rhlvt_npmos'
     log_path='%s.log'%log
     bad_path='%s.list'%log
     log_f=open(log_path,'w')
     bad_f=open(bad_path,'w')
     for i in range(0,len(group_list)):
-        convertGroup( group_list[i],infi_list[max_len_index][i],i )
+        convertGroup( group_list[i],infi_list[max_len_index][i],i,gui_output_path, gui_ratio, gui_rename, gui )
     log_path=os.path.join(os.getcwd(),log_path)
     bad_path=os.path.join(os.getcwd(),bad_path)
-    printWait('Please check log file: %s for all log messages\n'%log_path)
-    printWait('Please check cleaned file: %s for \n'%bad_path)
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['Please check log file: %s for all log messages\n'%log_path,'info'])
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['Please check cleaned file: %s for \n'%bad_path,'info'])
     log_f.close() 
     bad_f.close()
         
-def convertGroup(group,infi_list,group_no):
+def convertGroup(group,infi_list,group_no, gui_output_path, gui_ratio, gui_rename, gui ):
     global wafer_ID
     global log_f
     global mode_list
     type_list=['none','NMOS','PMOS']
-    print
-    print('Group No: %d    Polar Type: %s    Mode Type: %s   W=%f   L=%f'%(group_no,
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),[''])
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['Group No: %d    Polar Type: %s    Mode Type: %s   W=%f   L=%f'%(group_no,
                                                                              type_list[infi_list[0]],
                                                                             mode_list[infi_list[1]-1],
                                                                             infi_list[2],
-                                                                           infi_list[3])),
-    print
+                                                                           infi_list[3])])
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),[''])
     log_f.writelines('\nGroup No: %d    Polar Type: %s    Mode Type: %s   W=%f   L=%f\n'%(group_no,
                                                                              type_list[infi_list[0]],
                                                                             mode_list[infi_list[1]-1],
@@ -185,7 +186,7 @@ def convertGroup(group,infi_list,group_no):
         part_flag=part_flag[0:9]
         vbs_list,idlin_L,idlin_R,idsat_L,idsat_R,vtlin_L,vtlin_R,vtsat_L,vtsat_R=convertPart(part_list,part_flag)
         
-    
+
         for i in range(0,loop):
             idlin_d=[]
             idsat_d=[]
@@ -233,12 +234,15 @@ def convertGroup(group,infi_list,group_no):
             idlin=idlin_L[i]+idlin_R[i]
             idlin_stdev=calstdev(idlin)
             idlin_mean=calmean(idlin)
+            
             idsat=idsat_L[i]+idsat_R[i]
             idsat_stdev=calstdev(idsat)
             idsat_mean=calmean(idsat)
+            
             vtlin=vtlin_L[i]+vtlin_R[i]
             vtlin_stdev=calstdev(vtlin)
             vtlin_mean=calmean(vtlin)
+
             vtsat=vtsat_L[i]+vtsat_R[i]
             vtsat_stdev=calstdev(vtsat)
             vtsat_mean=calmean(vtsat)
@@ -303,10 +307,22 @@ def convertGroup(group,infi_list,group_no):
                         idlin_d.append(string.atof(idlin_L[i][j])-string.atof(idlin_R[i][j]))
                     goodlist[0][:]=idlin_L[i]
                     goodlist[1][:]=idlin_R[i]
-                    
-                idlin_d_stdev=calstdev(idlin_d)
+                
+                # idlin, idsat should devide the mean value 
                 good_list=goodlist[0]+goodlist[1]
                 idlin_stdev=calstdev(good_list)                               
+                idlin_mean=calmean(good_list)
+                idlin_median=getmedian(good_list)
+
+                for idlin_index in xrange(len(idlin_d)):
+                    idlin_d[idlin_index] = idlin_d[idlin_index] / idlin_mean
+                idlin_d_stdev=calstdev(idlin_d)
+
+                color_str=''
+                idlin_ratio = idlin_mean/idlin_median
+                if idlin_ratio<(1-gui_ratio) or idlin_ratio>(1+gui_ratio):
+                    color_str = 'error'
+                ratio_log(gui,'Idlin', idlin_mean, idlin_median, i+1, color_str)
             else:
                 continue
             if len(idsat_L[i])==len(idsat_R[i]):
@@ -331,9 +347,22 @@ def convertGroup(group,infi_list,group_no):
                     goodlist[2][:]=idsat_L[i]
                     goodlist[3][:]=idsat_R[i]
                     
-                idsat_d_stdev=calstdev(idsat_d)
+                # idlin, idsat should devide the mean value 
                 good_list=goodlist[2]+goodlist[3]
                 idsat_stdev=calstdev(good_list)                               
+                idsat_mean=calmean(good_list)
+                idsat_median=getmedian(good_list)
+
+                for idsat_index in xrange(len(idsat_d)):
+                    idsat_d[idsat_index] = idsat_d[idsat_index] / idsat_mean
+                idsat_d_stdev=calstdev(idsat_d)
+
+                color_str=''
+                idsat_ratio = idsat_mean/idsat_median
+                if idsat_ratio<(1-gui_ratio) or idsat_ratio>(1+gui_ratio):
+                    color_str='error'
+                ratio_log(gui,'Idsat', idsat_mean, idsat_median, i+1,color_str)
+
             else:
                 continue
             if len(vtlin_L[i])==len(vtlin_R[i]):
@@ -361,6 +390,14 @@ def convertGroup(group,infi_list,group_no):
                 vtlin_d_stdev=calstdev(vtlin_d)
                 good_list=goodlist[4]+goodlist[5]
                 vtlin_stdev=calstdev(good_list)                               
+                vtlin_mean=calmean(good_list)
+                vtlin_median=getmedian(good_list)
+
+                color_str=''
+                vtlin_ratio = vtlin_mean/vtlin_median
+                if vtlin_ratio<(1-gui_ratio) or vtlin_ratio>(1+gui_ratio):
+                    color_str= 'error'
+                ratio_log(gui,'Vtlin', vtlin_mean, vtlin_median,i+1, color_str)
             else:
                 continue
             if len(vtsat_L[i])==len(vtsat_R[i]):
@@ -388,45 +425,50 @@ def convertGroup(group,infi_list,group_no):
                 vtsat_d_stdev=calstdev(vtsat_d)
                 good_list=goodlist[6]+goodlist[7]
                 vtsat_stdev=calstdev(good_list)                               
+                vtsat_mean=calmean(good_list)
+                vtsat_median=getmedian(good_list)
+
+                color_str=''
+                vtsat_ratio = vtsat_mean/vtsat_median
+                if vtsat_ratio<(1-gui_ratio) or vtsat_ratio>(1+gui_ratio):
+                    color_str = 'error'
+                ratio_log(gui,'Vtsat', vtsat_mean, vtsat_median, i+1,color_str)
             else:
                 continue
             
-                        
-            
-            
             if True:#mean == 'on' :
-                if (idlin_stdev**2 - (idlin_d_stdev**2)/2)<0:
+                if (idlin_stdev**2 - ((idlin_d_stdev*idlin_mean)**2)/2)<0:
                     log_f.writelines('Idlin --> Bias No %d  Warning: the local variation is larger than the total variation!\n'%(i+1))
-                    printResult('Idlin --> Bias No %d  Warning: the local variation is larger than the total variation!'%(i+1))
-                    print
+                    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['Idlin --> Bias No %d  Warning: the local variation is larger than the total variation!'%(i+1),'warning'])
+                    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),[''])
                     idlin_final_g =0
                 else:
-                    idlin_final_g = (((idlin_stdev**2 - (idlin_d_stdev**2)/2))**0.5)*1e-6
-                if (idsat_stdev**2 - (idsat_d_stdev**2)/2)<0:
+                    idlin_final_g = (((idlin_stdev**2 - ((idlin_d_stdev*idlin_mean)**2)/2))**0.5)*1e-6
+                if (idsat_stdev**2 - ((idsat_d_stdev*idsat_mean)**2)/2)<0:
                     log_f.writelines('Idsat --> Bias No %d  Warning: the local variation is larger than the total variation!\n'%(i+1))
-                    printResult('Idsat --> Bias No %d  Warning: the local variation is larger than the total variation!'%(i+1))
-                    print
+                    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['Idsat --> Bias No %d  Warning: the local variation is larger than the total variation!'%(i+1),'warning'])
+                    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),[''])
                     idsat_final_g =0
                 else:
-                    idsat_final_g = (((idsat_stdev**2 - (idsat_d_stdev**2)/2))**0.5)*1e-3
-                idlin_final_l = idlin_d_stdev/abs(idlin_mean)
-                idsat_final_l = idsat_d_stdev/abs(idsat_mean)
-    
+                    idsat_final_g = (((idsat_stdev**2 - ((idsat_d_stdev*idsat_mean)**2)/2))**0.5)*1e-3
+                idlin_final_l = idlin_d_stdev
+                idsat_final_l = idsat_d_stdev
+
             else:
                 pass
             
             if (vtlin_stdev**2 - (vtlin_d_stdev**2)/2)<0:
                 log_f.writelines('vtlin --> Bias No %d  Warning: the local variation is larger than the total variation!\n'%(i+1))
-                printResult('vtlin --> Bias No %d  Warning: the local variation is larger than the total variation!'%(i+1))
-                print
+                gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['vtlin --> Bias No %d  Warning: the local variation is larger than the total variation!'%(i+1),'warning'])
+                gui.emit(SIGNAL("log_append(PyQt_PyObject)"),[''])
                 vtlin_final_g =0
             else:
                 vtlin_final_g = abs(((vtlin_stdev**2 - (vtlin_d_stdev**2)/2)**0.5))
                 
             if (vtsat_stdev**2 - (vtsat_d_stdev**2)/2)<0:
                 log_f.writelines('vtsat --> Bias No %d  Warning: the local variation is larger than the total variation!\n'%(i+1))
-                printResult('vtsat --> Bias No %d  Warning: the local variation is larger than the total variation!'%(i+1))
-                print
+                gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['vtsat --> Bias No %d  Warning: the local variation is larger than the total variation!'%(i+1),'warning'])
+                gui.emit(SIGNAL("log_append(PyQt_PyObject)"),[''])
                 vtsat_final_g =0
             else:
                 vtsat_final_g = abs(((vtsat_stdev**2 - (vtsat_d_stdev**2)/2)**0.5))
@@ -435,16 +477,39 @@ def convertGroup(group,infi_list,group_no):
             vtlin_final_l = vtlin_d_stdev
             
             writeFile(wafer_ID,infi_list,vbs_list[i],idlin_final_g,idlin_final_l,idsat_final_g,idsat_final_l,
-                      vtsat_final_g,vtsat_final_l,vtlin_final_g,vtlin_final_l,badlist,goodlist)
+                      vtsat_final_g,vtsat_final_l,vtlin_final_g,vtlin_final_l,badlist,goodlist, gui_output_path)
             
             if False:#mean == 'OFF':
-                idlin_final_l= idlin_final_l *abs(idlin_mean)* 1e-6
-                idsat_final_l= idsat_final_l *abs(idsat_mean)* 1e-3
+                idlin_final_l= idlin_final_l * 1e-6
+                idsat_final_l= idsat_final_l * 1e-3
                 writekickMean(wafer_ID,infi_list,vbs_list[i],idlin_final_l, idsat_final_l)
     except:
-        log_f.writelines('Bias no %d:    Failed\n'%(group_no+1))
-        printError('Bias no %d:    Failed'%(group_no+1))
-        print
+        log_f.writelines('Group no %d:    Failed\n'%(group_no+1))
+        gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['Bias no %d:       Failed'%(group_no+1),'error'])
+        gui.emit(SIGNAL("log_append(PyQt_PyObject)"),[''])
+
+def ratio_log(gui, kop, mean, median, bias_no, color_str):
+    '''
+    output the info if the ratio out of threshold
+    '''
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['KOP: %s BIAS NO. %d'%(kop,bias_no),color_str])
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['Mean Value: %s'%mean, color_str])
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['Median Value: %s'%median, color_str])
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['Ratio:%s%%'%(mean/median*100),color_str])
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['------------------------------------------------', color_str])
+
+def getmedian(data_list):
+    # get the median value of one list
+    temp_list=[]
+    for i in range(0,len(data_list)):
+        try:
+            value=float(data_list[i])
+            temp_list.append(value)
+        except:
+            pass
+    temp_list.sort()
+    return temp_list[len(temp_list)//2]
+
 def convertPart(part_list, part_flag):
     global mean
     global sigma
@@ -662,7 +727,7 @@ def writekickMean(wafer_ID,infi_list,vbs,idlin_final_l, idsat_final_l):
         f.writelines('%-10s%-10s'%('w','l')+'%-25s%-25s'%('idlin_final_l','idsat_final_l')+'\n')
         f.writelines('%-10s%-10s'%(w,l)+'%-25e%-25e'%(idlin_final_l,idsat_final_l)+'\n')
         f.close()
-def writeFile(wafer_ID,infi_list,vbs,idlin_final_g,idlin_final_l,idsat_final_g,idsat_final_l,vtsat_final_g,vtsat_final_l,vtlin_final_g,vtlin_final_l,badlist,goodlist):
+def writeFile(wafer_ID,infi_list,vbs,idlin_final_g,idlin_final_l,idsat_final_g,idsat_final_l,vtsat_final_g,vtsat_final_l,vtlin_final_g,vtlin_final_l,badlist,goodlist,gui_output_path):
     global bad_f
     global mode_list
     name_list=[]
@@ -685,10 +750,10 @@ def writeFile(wafer_ID,infi_list,vbs,idlin_final_g,idlin_final_l,idsat_final_g,i
     w=repr(infi_list[-1])
     name_list.append(repr(vbs))
     name_str='_'.join(name_list)
-    name_str_g=name_str+'_global'+'.gspec'
-    name_str_l=name_str+'_local'+'.lspec'
+    name_str_g=name_str+'_global'+'.gspc'
+    name_str_l=name_str+'_local'+'.lspc'
     name_str_raw=name_str+'_raw'+'.gwat'
-    name_str_delta=name_str+'_delta'+'.lwat'
+    name_str_delta=name_str+'_delta'+'.lvwat'
     
     delta=[[],[],[],[]]
     raw=[[],[],[],[]]
@@ -704,15 +769,19 @@ def writeFile(wafer_ID,infi_list,vbs,idlin_final_g,idlin_final_l,idsat_final_g,i
             raw_l_list=[]
             raw_r_list=[]
             bad_f.writelines(flag_str[i//2])
+            if i//2==0 or i//2==1:
+                good_list_mean = calmean( goodlist[i]+goodlist[i+1] )
+            else:
+                good_list_mean = 1
             for j in range(0,len(goodlist[i])):
                 bad_f.writelines('%-25s%-25s\n'%(goodlist[i][j],goodlist[i+1][j]))
                 
                 if i//2==0:
-                    delta_value=(goodlist[i][j]-goodlist[i+1][j])*1e-6
+                    delta_value=(goodlist[i][j]-goodlist[i+1][j])/good_list_mean
                     raw_l=goodlist[i][j]*1e-6
                     raw_r=goodlist[i+1][j]*1e-6
                 elif i//2==1:
-                    delta_value=(goodlist[i][j]-goodlist[i+1][j])*1e-3
+                    delta_value=(goodlist[i][j]-goodlist[i+1][j])/good_list_mean
                     raw_l=goodlist[i][j]*1e-3
                     raw_r=goodlist[i+1][j]*1e-3
                 else:
@@ -733,7 +802,7 @@ def writeFile(wafer_ID,infi_list,vbs,idlin_final_g,idlin_final_l,idsat_final_g,i
             bad_f.writelines('\n')
             bad_f.writelines('\n')
     
-#####################creat global spec
+#####################creat global spc
     file_path=createFile(name_str_g)
     if os.path.exists(file_path):
         f=open(file_path,'a')
@@ -775,7 +844,7 @@ def writeFile(wafer_ID,infi_list,vbs,idlin_final_g,idlin_final_l,idsat_final_g,i
         f.writelines('\n'.join(writelist)+'\n')
         f.close()
         
-###############creat local spec
+###############creat local spc
     file_path=createFile(name_str_l)
     if os.path.exists(file_path):
         f=open(file_path,'a')
@@ -972,11 +1041,11 @@ def createFile(filename):
     path=os.path.join(cwdpath,path)
     return path
     
-def makedir():
+def makedir(gui_output_path):
     global wafer_ID
     global mode_list
     dataname='_'.join(wafer_ID)+'_rhlvt_npmos'
-    root = os.path.join('Converted data',dataname)
+    root = os.path.join(gui_output_path,dataname)
     for mode in mode_list:
         for polar in ['NMOS','PMOS']:
             path= os.path.join(root,mode)
@@ -993,13 +1062,13 @@ def findspecfile():
     dircontent=os.walk(currentdir)
     for root,dirs,files in dircontent:
         for mem in files:
-            if mem.split('.')[-1].find('spec')<>-1:
+            if mem.split('.')[-1].find('spc')<>-1:
                 if mem.find('global')<>-1:
                     continue
                 mem=os.path.join(root,mem)
                 speclist.append(mem) 
                 
-def plot(filename,show_flag=0):
+def plot(filename,show_flag=0,gui=None):
     f=open(filename)
     content=f.readlines()
     f.close()
@@ -1045,63 +1114,90 @@ def plot(filename,show_flag=0):
         png_path='.'.join(filename.split('.')[:-1]) + '.png'
         plt.savefig(png_path)
         plt.close()
-        printWait('plot %s...\n'%filename)
+        if gui != None:
+            gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['plot %s...\n'%filename,'info'])
+        else:
+            print('plot %s...\n'%filename)
+
+def gui_itf(gui,gui_input_path, gui_output_path, gui_sigma, gui_ratio, gui_rename):
+    global speclist
+    global sigma
+    global convertlist
+    sigma = gui_sigma
+
+    convert_list=[]
+    convertlist.append(gui_input_path)
+
+    current=os.getcwd()
+    convertFile(gui_output_path, gui_ratio, gui_rename,gui)
+    os.chdir(os.pardir)
+    os.chdir(os.pardir)
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),[''])
+    gui.emit(SIGNAL("log_append(PyQt_PyObject)"),['Plot spec figure','info'])
+    findspecfile()
+    for i in xrange(len(speclist)):
+        show_flag = 0
+        plot(speclist[i],show_flag,gui)
+    gui.emit(SIGNAL('log_append(PyQt_PyObject)'),['Finished ... ','info'])
+
+    
        
 if __name__ == '__main__':
+    pass
     
-    printWait('''*****************************************************************************
-1.If you will delete the data out of n sigma just input sigma=n
-2.If you want to check a specific .spec file's figure, input the file's name
-  like '8_NMOS_HVT_-0.6_local.lspec', '8_NMOS_HVT_-0.6_local.lspec -id' for 
-  idlin and idsat figure only and '8_NMOS_HVT_-0.6_local.lspec -vt' for
-  vtsat and vtline figure only.
-3.Input 'q' to exit
-*****************************************************************************\n''')
-    c_input=raw_input()
-    while(c_input<>'q' and c_input<>'Q'):
-        getSigma(c_input)
-        if c_input.find('spec')<>-1:
-            findspecfile()
-            flag=0
-            show_flag=1
-            temp_list=c_input.split(' ')
-            for i in range(0,len(temp_list)):
-                if temp_list[i].find('spec')<>-1:
-                    spec_name=temp_list[i].rstrip('\"\'')
-                    spec_name=spec_name.lstrip('\"\'')
-                elif temp_list[i].upper()=='-ID':
-                    show_flag='id'
-                elif temp_list[i].upper()=='-VT':
-                    show_flag='vt'
-                    
-            for i in range(0,len(speclist)):
-                if speclist[i].endswith(spec_name):
-                    flag=1
-                    plot(speclist[i],show_flag)
-            if flag==0:
-                printError('No such spec file!')
-        else:
-            if os.path.exists('Converted data'):
-                shutil.rmtree('Converted data')
-            findFile()
-            #for i, data in enumerate( convertlist ):
-            current=os.getcwd()
-            convertFile()
-            os.chdir(os.pardir)
-            os.chdir(os.pardir)
-            print
-            printResult('Plot spec figure... \n')
-            findspecfile()
-            for i in range (0,len(speclist)):
-                show_flag=0
-                plot(speclist[i],show_flag)
-        print 
-        printWait('''*****************************************************************************
-1.If you will delete the data out of n sigma just input sigma=n
-2.If you want to check a specific .spec file's figure, input the file's name
-  like '8_NMOS_HVT_-0.6_local.lspec', '8_NMOS_HVT_-0.6_local.lspec -id' for 
-  idlin and idsat figure only and '8_NMOS_HVT_-0.6_local.lspec -vt' for
-  vtsat and vtline figure only.
-3.Input 'q' to exit
-*****************************************************************************\n''')
-        c_input=raw_input()
+#    printWait('''*****************************************************************************
+#1.If you will delete the data out of n sigma just input sigma=n
+#2.If you want to check a specific .spc file's figure, input the file's name
+#  like '8_NMOS_HVT_-0.6_local.lspec', '8_NMOS_HVT_-0.6_local.lspec -id' for 
+#  idlin and idsat figure only and '8_NMOS_HVT_-0.6_local.lspec -vt' for
+#  vtsat and vtline figure only.
+#3.Input 'q' to exit
+#*****************************************************************************\n''')
+#    c_input=raw_input()
+#    while(c_input<>'q' and c_input<>'Q'):
+#        getSigma(c_input)
+#        if c_input.find('spec')<>-1:
+#            findspecfile()
+#            flag=0
+#            show_flag=1
+#            temp_list=c_input.split(' ')
+#            for i in range(0,len(temp_list)):
+#                if temp_list[i].find('spec')<>-1:
+#                    spec_name=temp_list[i].rstrip('\"\'')
+#                    spec_name=spec_name.lstrip('\"\'')
+#                elif temp_list[i].upper()=='-ID':
+#                    show_flag='id'
+#                elif temp_list[i].upper()=='-VT':
+#                    show_flag='vt'
+#                    
+#            for i in range(0,len(speclist)):
+#                if speclist[i].endswith(spec_name):
+#                    flag=1
+#                    plot(speclist[i],show_flag)
+#            if flag==0:
+#                printError('No such spec file!')
+#        else:
+#            if os.path.exists('Converted data'):
+#                shutil.rmtree('Converted data')
+#            findFile()
+#            #for i, data in enumerate( convertlist ):
+#            current=os.getcwd()
+#            convertFile()
+#            os.chdir(os.pardir)
+#            os.chdir(os.pardir)
+#            print
+#            printResult('Plot spec figure... \n')
+#            findspecfile()
+#            for i in range (0,len(speclist)):
+#                show_flag=0
+#                plot(speclist[i],show_flag)
+#        print 
+#        printWait('''*****************************************************************************
+#1.If you will delete the data out of n sigma just input sigma=n
+#2.If you want to check a specific .spec file's figure, input the file's name
+#  like '8_NMOS_HVT_-0.6_local.lspec', '8_NMOS_HVT_-0.6_local.lspec -id' for 
+#  idlin and idsat figure only and '8_NMOS_HVT_-0.6_local.lspec -vt' for
+#  vtsat and vtline figure only.
+#3.Input 'q' to exit
+#*****************************************************************************\n''')
+#        c_input=raw_input()
