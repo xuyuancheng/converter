@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>560</width>
-    <height>561</height>
+    <width>614</width>
+    <height>578</height>
    </rect>
   </property>
   <property name="cursor">
@@ -18,156 +18,147 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../2.ico</normaloff>../2.ico</iconset>
+    <normaloff>../../2.ico</normaloff>../../2.ico</iconset>
   </property>
-  <layout class="QGridLayout" name="gridLayout_2">
-   <item row="0" column="0">
-    <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="0">
-      <layout class="QVBoxLayout" name="verticalLayout_3">
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0" rowspan="7">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QLineEdit" name="Input"/>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="Output"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="Change">
+       <property name="text">
+        <string>Input the kop need to rename. eg. VTI :VTLIN;VTGM:VTLIN</string>
+       </property>
+       <property name="buddy">
+        <cstring>Rename</cstring>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="Rename"/>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <item>
-          <widget class="QLineEdit" name="Input"/>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="Output"/>
-         </item>
-        </layout>
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>threshold value</string>
+         </property>
+         <property name="buddy">
+          <cstring>ratio</cstring>
+         </property>
+        </widget>
        </item>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
-         <item>
-          <widget class="QLabel" name="Change">
-           <property name="text">
-            <string>Input the kop need to rename. eg. VTI :VTLIN;VTGM:VTLIN</string>
-           </property>
-           <property name="buddy">
-            <cstring>Rename</cstring>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="Rename"/>
-         </item>
-        </layout>
+        <widget class="QDoubleSpinBox" name="ratio">
+         <property name="keyboardTracking">
+          <bool>true</bool>
+         </property>
+         <property name="decimals">
+          <number>3</number>
+         </property>
+         <property name="minimum">
+          <double>0.001000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>0.500000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.010000000000000</double>
+         </property>
+         <property name="value">
+          <double>0.010000000000000</double>
+         </property>
+        </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout">
-         <item>
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string>threshold value</string>
-           </property>
-           <property name="buddy">
-            <cstring>ratio</cstring>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QDoubleSpinBox" name="ratio">
-           <property name="keyboardTracking">
-            <bool>true</bool>
-           </property>
-           <property name="decimals">
-            <number>3</number>
-           </property>
-           <property name="minimum">
-            <double>0.001000000000000</double>
-           </property>
-           <property name="maximum">
-            <double>0.500000000000000</double>
-           </property>
-           <property name="singleStep">
-            <double>0.010000000000000</double>
-           </property>
-           <property name="value">
-            <double>0.010000000000000</double>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>        Sigma</string>
-           </property>
-           <property name="buddy">
-            <cstring>sigma</cstring>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="sigma">
-           <property name="maximum">
-            <number>10</number>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>        Sigma</string>
+         </property>
+         <property name="buddy">
+          <cstring>sigma</cstring>
+         </property>
+        </widget>
        </item>
        <item>
-        <widget class="QTextBrowser" name="log">
-         <property name="styleSheet">
-          <string notr="true">font: 75 9pt &quot;Consolas&quot;;
-background-color: rgb(226, 226, 226);</string>
+        <widget class="QSpinBox" name="sigma">
+         <property name="maximum">
+          <number>10</number>
          </property>
         </widget>
        </item>
       </layout>
      </item>
-     <item row="0" column="1">
-      <layout class="QVBoxLayout" name="verticalLayout_4">
-       <item>
-        <widget class="QPushButton" name="Input_button">
-         <property name="text">
-          <string>Open</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="Output_button">
-         <property name="text">
-          <string>Save</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>139</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QPushButton" name="Convert_button">
-         <property name="text">
-          <string>Convert</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="Result">
-         <property name="text">
-          <string>Result</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="Close_button">
-         <property name="text">
-          <string>Close</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
+     <item>
+      <widget class="QTextBrowser" name="log">
+       <property name="styleSheet">
+        <string notr="true">font: 75 9pt &quot;Consolas&quot;;
+background-color: rgb(226, 226, 226);</string>
+       </property>
+      </widget>
      </item>
     </layout>
+   </item>
+   <item row="0" column="1">
+    <widget class="QPushButton" name="Input_button">
+     <property name="text">
+      <string>Open</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QPushButton" name="Output_button">
+     <property name="text">
+      <string>Save</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>371</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="3" column="1">
+    <widget class="QPushButton" name="Show_button">
+     <property name="text">
+      <string>Show</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1">
+    <widget class="QPushButton" name="Convert_button">
+     <property name="text">
+      <string>Convert</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QPushButton" name="Result">
+     <property name="text">
+      <string>Result</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QPushButton" name="Close_button">
+     <property name="text">
+      <string>Close</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

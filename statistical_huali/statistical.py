@@ -6,6 +6,11 @@ Created on Mon Sep 17 14:03:54 2012
 """
 import os
 import sys
+import string
+from PyQt4.QtCore import *
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
 
 global convertlist
 convertlist=[]
@@ -81,7 +86,7 @@ def deleteBadpoint(data_list,log):
             value = float(data_list[i])
             temp_list.append(value)
         except:
-            log.append( "WARNNING: %s can't convert to float"%temp_list[i] )
+            log.emit(SIGNAL("log_append(PyQt_PyObject)"),["WARNING: %s can't convert to float"%temp_list[i],'warning'])
             return False
     ori_list[:] = temp_list
     temp_list.sort()
@@ -128,7 +133,7 @@ def outputGroup(head_list,log):
     keyoplist = list(set(keyoplist))
     for mark in out_dic.keys():
         if len(out_dic[mark]) != 2:
-            log.append( "WARNNING: %s has %s"%(mark,','.join(out_dic[mark])) )
+            log.emit( SIGNAL("log_append(PyQt_PyObject)"), ["WARNING: %s has %s"%(mark,','.join(out_dic[mark])),'warning'] )
             del out_dic[mark]
     for out_list in out_dic.values():
         out_list.sort(key=lambda out:out.split('_')[0][-1])
@@ -162,7 +167,7 @@ def calmean(valuelist):
     mean=total/(len(valuelist))
     return mean
 
-def output_gwat(line_dic,line_dic_del,output_dic,file_path,file_path_del,ratio,log,red_col,black_col):
+def output_gwat(line_dic,line_dic_del,output_dic,file_path,file_path_del,out_flag,ratio,log):
     global instancelist
     global keyoplist
     global d_type
@@ -208,75 +213,104 @@ def output_gwat(line_dic,line_dic_del,output_dic,file_path,file_path_del,ratio,l
                 temp_list = out_list[0].split('_')
                 cur_kop = temp_list[0][:-1]
                 cur_instance = temp_list[-2] + '_' +temp_list[-1]
+                mismatch = cur_kop + '_' + cur_instance
                 if cur_kop == kop and cur_instance == instance:
                     first_list = line_dic[out_list[0]]
-                    for i in range(0,len(first_list)):
-                        if i_kop == 0:
-                            section.append([])
-                            section[-1].append(first_list[i])
-                        else:
-                            section[i].append(first_list[i])
                     second_list = line_dic[out_list[1]]
-                    for i in range(0,len(second_list)):
+                    if out_flag == 'gwat':
+                        for i in range(0,len(first_list)):
+                            if i_kop == 0:
+                                section.append([])
+                                section[-1].append(first_list[i])
+                            else:
+                                section[i].append(first_list[i])
+                        for i in range(0,len(second_list)):
+                            if i_kop == 0:
+                                section.append([])
+                                section[-1].append(second_list[i])
+                            else:
+                                section[i+len(first_list)].append(second_list[i])
+                                
+                        #output delete data points
+                        first_list_del = line_dic_del[out_list[0]]
+                        for i in range(0,len(first_list_del)):
+                            if i_kop == 0:
+                                section_del.append([])
+                                section_del[-1].append(first_list_del[i])
+                            else:
+                                section_del[i].append(first_list_del[i])
+                        second_list_del = line_dic_del[out_list[1]]
+                        for i in range(0,len(second_list_del)):
+                            if i_kop == 0:
+                                section_del.append([])
+                                section_del[-1].append(second_list_del[i])
+                            else:
+                                section_del[i+len(first_list_del)].append(second_list_del[i])
+                        #output the median and mean value for gwat!
+                        combin_list = first_list + second_list
+                        mean_value = calmean(combin_list)
+                        median_value = getMedian(combin_list)
+                        ratio_control = mean_value/median_value
+                        # if the ratio value out of the ratio_control (0.99 or 1.01 eg.) set text color red
+                        color_str=''
+                        if ratio_control<(1-ratio) or ratio_control>(1+ratio):
+                            color_str = 'error'
+                        
+                        log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Kop:%s Instance:%s"%(kop,instance),color_str])
+                        log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Mean Value:%s"%mean_value,color_str])
+                        log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Median Value:%s"%median_value,color_str])
+                        log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Ratio:%s%%"%(mean_value/median_value*100),color_str])
+                        log.emit(SIGNAL("log_append(PyQt_PyObject)"),["-----------------------------------------------",color_str])
+                    else:
+                        global_list = first_list + second_list
+                        mismatch_list = line_dic[mismatch]
+
+                        stdev_global = calstdev(global_list)
+                        median_global = getMedian(global_list)
+                        stdev_mismatch = calstdev(mismatch_list)
+
+                        if  ( stdev_global**2 - ((stdev_mismatch*median_global)**2)/2 ) < 0 :
+                            color_str='error'
+                            log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Kop:%s Instance:%s"%(kop,instance),color_str])
+                            log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Warning: the local variation is larger than the total variation!",color_str])
+                            log.emit(SIGNAL("log_append(PyQt_PyObject)"),["-----------------------------------------------------------------",color_str])
+                            gspec_value = 0
+                        else:
+                            gspec_value = ( stdev_global**2 - ((stdev_mismatch*median_global)**2)/2 )**0.5 
                         if i_kop == 0:
                             section.append([])
-                            section[-1].append(second_list[i])
+                            section[-1].append(gspec_value)
                         else:
-                            section[i+len(first_list)].append(second_list[i])
-                            
-                    #output delete data points
-                    first_list_del = line_dic_del[out_list[0]]
-                    for i in range(0,len(first_list_del)):
-                        if i_kop == 0:
-                            section_del.append([])
-                            section_del[-1].append(first_list_del[i])
-                        else:
-                            section_del[i].append(first_list_del[i])
-                    second_list_del = line_dic_del[out_list[1]]
-                    for i in range(0,len(second_list_del)):
-                        if i_kop == 0:
-                            section_del.append([])
-                            section_del[-1].append(second_list_del[i])
-                        else:
-                            section_del[i+len(first_list_del)].append(second_list_del[i])
-                    #output the median and mean value for gwat!
-                    combin_list = first_list + second_list
-                    mean_value = calmean(combin_list)
-                    median_value = getMedian(combin_list)
-                    ratio_control = mean_value/median_value
-                    # if the ratio value out of the ratio_control (0.99 or 1.01 eg.) set text color red
-                    if ratio_control<(1-ratio) or ratio_control>(1+ratio):
-                        log.setTextColor(red_col)
+                            section[-1].append(gspec_value)
                     
-                    log.append("Kop:%s Instance:%s"%(kop,instance))
-                    log.append("Mean Value:%s"%mean_value)
-                    log.append("Median Value:%s"%median_value)
-                    log.append("Ratio:%s%%"%(mean_value/median_value*100))
-                    log.append("-----------------------------------------------")
-                    log.setTextColor(black_col)
         for i_section in range(0,len(section)):
             for j_data in range(0,len(section[i_section])):
                 section[i_section][j_data] = "%-25s"%section[i_section][j_data]
             section[i_section] = ''.join(section[i_section])
-        #output delete data points
-        for i_section in range(0,len(section_del)):
-            for j_data in range(0,len(section_del[i_section])):
-                section_del[i_section][j_data] = "%-25s"%section_del[i_section][j_data]
-            section_del[i_section] = ''.join(section_del[i_section])
-        section_str_del = '\n'.join(section_del)
         section_str = '\n'.join(section)
         body = title + section_str + '\n' +tail
-        body_del = title + section_str_del + '\n' + tail
         body_list.append(body)
-        body_list_del.append(body_del)
+
+        if out_flag == 'gwat':
+            #output delete data points
+            for i_section in range(0,len(section_del)):
+                for j_data in range(0,len(section_del[i_section])):
+                    section_del[i_section][j_data] = "%-25s"%section_del[i_section][j_data]
+                section_del[i_section] = ''.join(section_del[i_section])
+            section_str_del = '\n'.join(section_del)
+            body_del = title + section_str_del + '\n' + tail
+            body_list_del.append(body_del)
+
     f= open(file_path,'w')
     body = ''.join(body_list)
     f.writelines(head_str+body)
     f.close()
-    f= open(file_path_del,'w')
-    body = ''.join(body_list_del)
-    f.writelines(body)
-    f.close()
+
+    if out_flag == 'gwat':
+        f= open(file_path_del,'w')
+        body = ''.join(body_list_del)
+        f.writelines(body)
+        f.close()
     
 def output_lwat(line_dic,mismatch_list,file_path,out_flag = 'lwat'):
     # output the lwat file
@@ -333,19 +367,12 @@ def output_lwat(line_dic,mismatch_list,file_path,out_flag = 'lwat'):
                             else:
                                 section[i].append(first_list[i])
                     else:
-                        stdev = calstdev(first_list)
-                        mean = calmean(first_list)
-                        l_spec_value = 0
-                        if cur_kop.upper().startswith('I'):
-                            if mean != 0:
-                                l_spec_value = '%0.6g'%(stdev/mean)
-                        else:
-                            stdev = '%0.6g'%calstdev(first_list)
+                        stdev = '%0.6g'%calstdev(first_list)
                         if i_kop == 0:
                             section.append([])
-                            section[-1].append(l_spec_value)
+                            section[-1].append(stdev)
                         else:
-                            section[-1].append(l_spec_value)
+                            section[-1].append(stdev)
         for i_section in range(0,len(section)):
             for j_data in range(0,len(section[i_section])):
                 section[i_section][j_data] = "%-25s"%section[i_section][j_data]
@@ -372,12 +399,73 @@ def getMedian(data_list):
             pass
     temp_list.sort()
     return temp_list[len(temp_list)//2]
-                              
-def convert(input_path,output_dir,sigma,ratio,rename,log,red_col,black_col):
+
+def findspecfile(output_dir):
+
+    spec_list=[]
+    for root,dirs,files in os.walk(output_dir):
+        for fil in files:
+            if fil.split('.')[-1].find('lspc')<>-1:
+                spec_path = os.path.join(root,fil)
+                spec_list.append(spec_path)
+    return spec_list
+
+def plot(filename, show_flag,log):
+    f=open(filename)
+    content=f.readlines()
+    f.close()
+    x=[]
+    kop_list=[]
+    find_flag = 0
+    for i in range(0,len(content)):
+        if content[i].startswith('.START_DATA'):
+            find_flag= 1
+            continue
+        if find_flag:
+            kop_list = content[i].split()
+            break
+    kop_value_list=[]
+    for kop in kop_list:
+        kop_value_list.append([])
+    for i in range(0,len(content)):
+        if content[i].startswith('.START_DATA'):
+            temp_list=content[i].split('|')
+            w_str=temp_list[-3].split('=')[-1]
+            l_str=temp_list[-2].split('=')[-1]
+            w=string.atof(w_str)
+            l=string.atof(l_str)
+            x.append(1/((w*l)**0.5))
+            
+            temp_list=content[i+2].split()
+            for kop_index in xrange(len(kop_value_list)):
+                kop_value_list[kop_index].append(string.atof(temp_list[kop_index]))
+
+    x=np.array(x)
+    for i in xrange(len(kop_value_list)):
+        kop_value_list[i] = np.array(kop_value_list[i])
+    matplotlib.rcParams['axes.unicode_minus'] = False
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    shape_list=['s','o','x','h']
+    color_list=['b','r','g','k']
+    for i in xrange(len(kop_value_list)):
+        ax.plot(x,kop_value_list[i],shape_list[i],label=kop_list[i])
+    ax.legend(bbox_to_anchor = (1, 0.28))
+    ax.set_title(os.path.basename(filename))
+    if show_flag<>0:
+        plt.show()
+        plt.close()
+    else:
+        png_path='.'.join(filename.split('.')[:-1]) + '.png'
+        plt.savefig(png_path)
+        plt.close()
+        log.emit(SIGNAL("log_append(PyQt_PyObject)"),['plot %s...'%filename,'info'])
+    
+def convert(log,input_path,output_dir,sigma,ratio,rename):
     global d_type
     file_name = os.path.basename(input_path).split('.')[0]
 
-    log.append( 'Convert %s...'%os.path.basename(input_path) )
+    log.emit(SIGNAL("log_append(PyQt_PyObject)"),['Convert %s...'%os.path.basename(input_path),'info'])
     f=open(input_path,'r')
     content=f.readlines()
     f.close()
@@ -491,16 +579,16 @@ def convert(input_path,output_dir,sigma,ratio,rename,log,red_col,black_col):
                             delete.append(data_list[i_data])
                     line_dic[out_list[i_out]] = replace
                     line_dic_del[out_list[i_out]].extend(delete)
-        
-    gwat_file_name = os.path.join(output_dir,(file_name+'.gwat'))
-    gwat_file_name_del = os.path.join(output_dir,(file_name+'_delete.txt'))
-    output_gwat(line_dic,line_dic_del,output_dic,gwat_file_name,gwat_file_name_del,ratio,log,red_col,black_col)
-    log.append("Output gwat file %s"%os.path.basename(gwat_file_name))
-
-    gspec_file_path = os.path.join(output_dir,(file_name + '.gspc'))
-    output_gwat(line_dic, mismatch_list, gspec_file_path,out_flag = 'gspec')
-    log.append("Output gspec file %s"%os.path.basename(gspec_file_path))
+    ##############################################################################################################
+    # 1.  (value_n_1 - value_n_2 ) / value_list_median = lvwat_value_n
+    # 2.  stdev of lvwat_value_list   -> lspc
+    # 3.  value_1_list + value_2_list -> gwat_list
+    # 4.  ((stdev of '3')**2  - ('2'**2)/2)**0.5  -> gspc
+    ##############################################################################################################
     
+
+    #first we should get the mismatch list then we can output the .gspec and lspec, lvwat
+
     #########################
     # Get the mismatch list
     #########################
@@ -530,24 +618,35 @@ def convert(input_path,output_dir,sigma,ratio,rename,log,red_col,black_col):
                 value = '%0.6e'%(first-second)
                 mis_list.append(value)
             line_dic[mark] = mis_list
+
+
+    gwat_file_name = os.path.join(output_dir,(file_name+'.gwat'))
+    gwat_file_name_del = os.path.join(output_dir,(file_name+'_delete.txt'))
+    out_flag = 'gwat'
+    output_gwat(line_dic,line_dic_del,output_dic,gwat_file_name,gwat_file_name_del,out_flag,ratio,log)
+    log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Output gwat file %s"%os.path.basename(gwat_file_name),'info'])
+
+    gspec_file_path = os.path.join(output_dir,(file_name + '.gspc'))
+    out_flag = 'gspc'
+    output_gwat(line_dic,line_dic_del,output_dic,gspec_file_path,gwat_file_name_del,out_flag,ratio,log)
+    log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Output gspec file %s"%os.path.basename(gspec_file_path),'info'])
+
+
     lwat_file_path = os.path.join(output_dir,(file_name + '.lvwat'))
     output_lwat(line_dic, mismatch_list,lwat_file_path)
-    
-    log.append("Output lwat file %s"%os.path.basename(lwat_file_path))
+    log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Output lwat file %s"%os.path.basename(lwat_file_path),'info'])
     
     lspec_file_path = os.path.join(output_dir,(file_name + '.lspc'))
     output_lwat(line_dic, mismatch_list,lspec_file_path,out_flag ='lspec')
-    log.append("Output lspec file %s"%os.path.basename(lspec_file_path))
-    
-    log.append("Success...")
-    log.append("Press result button to open result folder.")
-        
-        
-            
-            
-            
+    log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Output lspec file %s"%os.path.basename(lspec_file_path),'info'])
 
-                
-                    
-                
-            
+    spec_list=findspecfile(output_dir)
+    for i in xrange(len(spec_list)):
+        show_flag=0
+        try:
+            plot(spec_list[i],show_flag,log)
+        except:
+            log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Plot spec file %s failed"%os.path.basename(spec_list[i]),'error'])
+    
+    log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Success...",'info'])
+    log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Press result button to open result folder.",'info'])
