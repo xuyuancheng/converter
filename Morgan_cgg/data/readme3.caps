@@ -1,0 +1,82 @@
+There are ten files of low Frequency capacitance data for the
+CMC next generation MOSFET model evelaulation:
+
+As I send this originally on Sept 27th. the lvtpfet capacitance data looks
+somewhat suspect and I will get it remeasured. Joe Watts
+Nov. 2 update includes new lvtpfet junction capacitance data
+Jan. 15 the Lscale_tox data has drawn lengths added
+
+cmc.tox.nfet            large area oxide capacitance
+cmc.tox.pfet            (these are not the same Vt implant as DC devices)
+                        Our values for tox inversion:
+                        NMOS 2.22 nm
+                        PMOS 2.34 nm
+Dec. 10 update          Added tox from NFET L=1u finger structure because
+                        because Ntype large area structure was missing
+                        the substrate contact
+cmc2.cgate_n            same structure but capacitance from gate to
+cmc2.cgate_p            combined source/drain/body
+
+In the header:
+L:     6.75u     length of one gate
+W:     6.75u     width of one gate
+m:     44        number of gates in parallel for measurement
+
+All of the above tox data was taken with the same connections.
+Source/Drain: LCR meter High, DC bias ramped
+Gate:         LCR meter Low,  DC bias ground
+Body:         Tied to Source/Drain (body is substrate for NFET
+                                       and NWELL for PFET)
+
+cmc2.cgate_p            same structure but capacitance from gate to
+                        combined source/drain/body
+Source/Drain: LCR meter High, DC bias ramped
+Gate:         LCR meter Low,  DC bias ground
+Nwell:        Floating
+
+cmc.Lscale_tox.lvtnfet  multifinger short gate capacitanc
+cmc.Lscale_tox.lvtpfet
+In the header:
+L:     0.0481 u (estimated poly length) my calculation of poly length from
+                 this data using a fixed value outer fringe
+Ldrawn:    0.7u  design length
+W:     333u                     design width
+nf:    76 (plus 3 fingers 64u wide)  number of 333u wide fingers
+                                     There are also 3 narrower fingers
+Connections for Lscaling Tox
+Source/Drain: LCR meter Low,  DC bias ground
+Gate:         LCR meter High,  DC bias ramped
+Body:         System Ground, separate from Source/Drain
+
+cmc.cover.lvtnfet       overlap capacitance
+cmc.cover.lvtpfet
+In the header:
+L:     0.08u     drawn finger length
+W:     37        drawn finer width
+m:     372       number of fingers
+Connections for Overlap Capacitance
+Source/Drain: LCR meter Low,  DC bias ground
+Gate:         LCR meter High,  DC bias ramped
+Body:         System Ground, separate from Source/Drain
+
+
+cmc.jct.lvtnfet         Poly bound narrow junction capacitance
+cmc2.jct.lvtpfet        "2" indicates update from previous data
+In the header:
+A:     6367             Area of diffusion
+P:     40025            poly perimeter of diffusion
+m:     1                number of identical structures
+
+cmc.jct.nfet            large are junction capacitance
+cmc2.jct.pfet            (these are not the same Vt implant as DC devices
+                         but the area capacitance should be nearly identical)
+In the header:
+L:     127              This is one rectangular area 127x58 microns
+W:     58
+m:     1
+
+Connections for all junction capacitance measurements
+Source/Drain: LCR meter Low,  DC bias ground
+Gate:         System Ground, separate from Source/Drain
+Body:         LCR meter High,  DC bias ramped
+
