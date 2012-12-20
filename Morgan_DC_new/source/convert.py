@@ -259,14 +259,34 @@ def body_cvt(part_list):
                 
                 out_index = out_list.index(out)
                 graph=[]
-                for x_value in sweep_list[sort_list[-1]]:
+                # if the data is pmos, should reverse the x axis's value first, then sort and reset the x axis list 
+                # the string list sort is different with flost list sort, so there also needs to convert to float 
+                if polar == 'PMOS':
+                    x_reverse_list=[]
+                    x_value_dic={}
+                    for i, x_value in enumerate(sweep_list[sort_list[-1]]):
+                        if x_value.startswith('-'):
+                            x_value_reverse = x_value[1:]
+                            x_value_reverse = float(x_value_reverse)
+                        else:
+                            x_value_reverse = '-' + x_value
+                            x_value_reverse = float(x_value_reverse)
+                        x_reverse_list.append(x_value_reverse)
+                        x_value_dic[x_value_reverse] = x_value
+                    x_reverse_list.sort()
+                    for i,reverse_value in enumerate(x_reverse_list):
+                        sweep_list[sort_list[-1]][i] = x_value_dic[reverse_value]
+
+                for i,x_value in enumerate(sweep_list[sort_list[-1]]):
+                    line_list=[]
                     if polar == 'PMOS':
                         if x_value.startswith('-'):
                             x_value_reverse = x_value[1:]
                         else:
-                            x_value_reverse = '-'+x_value
-                    line_list=[]
-                    line_list.append(x_value_reverse)
+                            x_value_reverse = '-' + x_value
+                        line_list.append(x_value_reverse)
+                    else:
+                        line_list.append(x_value)
                     for y_value in sweep_list[sort_list[1]]:
                         mask = '%s,%s,%s'%(x_value,y_value,p_sweep_value)
                         try:
