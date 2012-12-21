@@ -4,8 +4,8 @@ Created on Mon Sep 10 09:06:50 2012
 
 @author: zhaiyt
 """
-import os
 import sys
+import os
 
 global convertlist
 convertlist=[]
