@@ -268,15 +268,26 @@ def output_gwat(line_dic,line_dic_del,output_dic,file_path,file_path_del,out_fla
                         stdev_global = calstdev(global_list)
                         median_global = getMedian(global_list)
                         stdev_mismatch = calstdev(mismatch_list)
-
-                        if  ( stdev_global**2 - ((stdev_mismatch*median_global)**2)/2 ) < 0 :
-                            color_str='error'
-                            log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Kop:%s Instance:%s"%(kop,instance),color_str])
-                            log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Warning: the local variation is larger than the total variation!",color_str])
-                            log.emit(SIGNAL("log_append(PyQt_PyObject)"),["-----------------------------------------------------------------",color_str])
-                            gspec_value = 0
+                    
+                        kop_lower = kop.lower()
+                        if kop_lower.startswith('i'):
+                            if  ( stdev_global**2 - ((stdev_mismatch*median_global)**2)/2 ) < 0 :
+                                color_str='error'
+                                log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Kop:%s Instance:%s"%(kop,instance),color_str])
+                                log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Warning: the local variation is larger than the total variation!",color_str])
+                                log.emit(SIGNAL("log_append(PyQt_PyObject)"),["-----------------------------------------------------------------",color_str])
+                                gspec_value = 0
+                            else:
+                                gspec_value = ( stdev_global**2 - ((stdev_mismatch*median_global)**2)/2 )**0.5 
                         else:
-                            gspec_value = ( stdev_global**2 - ((stdev_mismatch*median_global)**2)/2 )**0.5 
+                            if  ( stdev_global**2 - (stdev_mismatch**2)/2 ) < 0 :
+                                color_str='error'
+                                log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Kop:%s Instance:%s"%(kop,instance),color_str])
+                                log.emit(SIGNAL("log_append(PyQt_PyObject)"),["Warning: the local variation is larger than the total variation!",color_str])
+                                log.emit(SIGNAL("log_append(PyQt_PyObject)"),["-----------------------------------------------------------------",color_str])
+                                gspec_value = 0
+                            else:
+                                gspec_value = ( stdev_global**2 - (stdev_mismatch**2)/2 )**0.5 
                         if i_kop == 0:
                             section.append([])
                             section[-1].append(gspec_value)
